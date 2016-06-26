@@ -1,0 +1,21 @@
+# Prompt
+# set a prompt that shows the user name,
+# the machine name and the current directory
+ 
+if id >/dev/null 2>&1 ; then
+export USER=root
+else
+export USER=$LOGNAME
+fi
+export PS1='$USER@$NODE:$PWD '
+# Extend alias list
+alias aix="oem_setup_env"
+alias i=/usr/ios/cli/ioscli
+alias mpio="mpio_get_config -A"
+set -o vi
+ 
+resetrmc () {
+        rmcctrl -z
+        rmcctrl -A
+        rmcctrl -p
+}
