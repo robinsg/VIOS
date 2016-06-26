@@ -1,0 +1,24 @@
+#### root/padmin base settings on VIO servers
+## EXPORTS ##
+# PATH
+export PATH=$PATH
+export ENV=$HOME/.kshrc
+# get the machine for the prompt
+export NODE=$(hostname )
+# ignore CRTL-D when in login shell
+set -o ignoreeof
+set -o vi
+ 
+#Create an alias to display fc WWPNs. Use command getwwn in as padmin.
+function getwwn { for i in `lsdev | grep fcs | awk '{print $1}'`; do lsdev -vpd -dev $i | grep Network; done }
+ 
+# Set up server name to display un Putty Window Title bar
+export SERVER=$(hostname)
+case "$TERM" in
+xterm*|rxvt*)
+    PROMPT_COMMAND="\033]0;${SERVER}\007"
+    echo $PROMPT_COMMAND
+    ;;
+*)
+    ;;
+esac
