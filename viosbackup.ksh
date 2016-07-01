@@ -19,6 +19,24 @@
 # If you do NOT specify -mksysb on the backupios command then the SPOT is created automatically
 # which allows you to use NIM or HMC installios for recovery without any additional processing
 #
+# If your NFS server does not provide root access to allow the non-mksysb backup to complete then 
+# specify -noroot. This will create the viosbackup in /home/padmin/mksysb and then move the file to 
+# the NFS server
+#
+##############################################################################
+# Amendment history
+# Date          Who             What
+# 01/08/2015    Andy Moore      AJM0001 - Set a variable retention period
+#                               AJM0002 - Seletion of existing backups to use the variable above
+#                               AJM0003 - echo the full date & time when setting the logfile
+#                               AJM0004 - amended the target to 10.137.30.1
+# 17/06/2016    Adam Robinson   AJR0001 - Amended the target to 10.237.50.70
+# 20/06/2016    Glenn Robinson  GPR0001 - Replaced with latest version from https://www.ibm.com/developerworks/community
+/wikis/home?lang=en#!/wiki/W76df4d73c7b8_40dc_88f7_e4957b1de7b6/page/VIOS%20backup%20to%20NFS%20share
+#                               AJM0002/AJM0003 removed as these had alrerady been fixed in the April 2016 version
+#                               AJM0001 retained and added in to script
+# 01/07/2016			GPR0002	- Added parameter checking and -noroot processing
+
 ##############################################################################
 DATE=$(date +%Y'-'%m'-'%d)
 LOG=${0}_${DATE}.out
@@ -32,20 +50,54 @@ typeset -i RETAIN_LOGS=7
 FQHOST=`hostname`
 HOST=${FQHOST%%.*}
 MOUNTDIR=/mnt
+LOCALDIR=/home/padmin/mksysb
 BACKUPDIR=${MOUNTDIR}/backup/${HOST}
 NFSHOST=MY_NFS_SERVER
 NFSSHARE=/export/vios
 FILENAME=${BACKUPDIR}/${HOST}_${DATE}.mksysb
 CLUSTER=$(/usr/ios/cli/ioscli cluster -list|grep CLUSTER_NAME|awk '{ print $2 }')
-# If no parameter was passed then do not use -mksysb when executing the backupios command
-if [ $# -eq 0 ]
-then
-        MKSYSB=false
-else
-        MKSYSB=true
-fi
+MKSYSB=false
+NOROOT=false
+
 # Initialise the log file
 echo ${DATE} > ${LOG}
+
+# GPR0002
+# Check for parameters
+while [[ $1 = -* ]]; do
+    case $1 in 
+	-mksysb )
+
+        MKSYSB=true
+
+ ;;
+	-noroot ) 
+
+	NOROOT=true
+
+ ;;
+
+	*  ) print 'usage: ./viosbackup.ksh [-mksysb] [-noroot]'
+	     return 1
+    esac
+    shift
+done
+
+# GPR0002
+# If this a NOROOT backup the check there is sufficient space on the local file system for the mksysb file
+# By default this will be saved to /home/padmin/mksysb folder
+if ${NOROOT}
+	then
+	FSSIZE=$(df -tg|grep /home$|awk '{ print $4 }')
+	MKSYSBSIZE=$(df -tk `lsvgfs rootvg` | awk '{total+=$3} END {printf "%.2f \n", total/1024/1024}')
+	if [[ ${MKSYSBSIZE} -ge ${FSSIZE} ]]
+		then
+		print "\nMKSYSB will too large for file system. Terminating backup \n" >> ${LOG}
+		return 1
+	fi
+fi
+
+
 #
 # Check the mount point exists (if run for the first time it may not)
 #
@@ -159,6 +211,14 @@ fi
 #
 # Backup using backupios command
 #
+
+# GPR0002
+# If this is a noroot backup then change the filename to use the local filesystem
+if ${NOROOT}
+	then
+	FILENAME=${LOCALDIR}/${HOST}_${DATE}.mksysb
+fi
+
 RC_MKSYSB=0
 if ${MKSYSB}
 then
@@ -177,7 +237,14 @@ then
         # rm ${FILENAME}
 else
         print "\nMKSYSB for $(date) COMPLETED SUCCESSFULLY \n" >> ${LOG}
+# GPR0002
+# If this is a noroot save then move the backup file to the NFS server
+	if ${NOROOT}
+		then
+		mv ${FILENAME} ${BACKUPDIR}/${HOST}_${DATE}.mksysb
+	fi
 fi
+
 # Copy the log file to the share
 cp ${LOG} ${BACKUPDIR}/${LOG##*/}
 #
