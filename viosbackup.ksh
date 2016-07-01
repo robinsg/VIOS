@@ -145,13 +145,16 @@ else
 fi
 # Now backup SSP cluster
 RC_VIOSBR=0
-/usr/ios/cli/ioscli viosbr -backup -clustername ${CLUSTER} -file ${HOST}-${DATE}
-RC_VIOSBR=$(echo $?)
-if [[ ${RC_VIOSBR} -ne 0 ]]
-then
-        print "\nCluster VIOSBR for $(date) FAILED \n" >> ${LOG}
-else
-        print "\nCluster VIOSBR for $(date) COMPLETED SUCCESSFULLY \n" >> ${LOG}
+if ! [[ -z "${CLUSTER}" ]]
+	then
+	/usr/ios/cli/ioscli viosbr -backup -clustername ${CLUSTER} -file ${HOST}-${DATE}
+	RC_VIOSBR=$(echo $?)
+	if [[ ${RC_VIOSBR} -ne 0 ]]
+		then
+        	print "\nCluster VIOSBR for $(date) FAILED \n" >> ${LOG}
+	else
+        	print "\nCluster VIOSBR for $(date) COMPLETED SUCCESSFULLY \n" >> ${LOG}
+	fi
 fi
 #
 # Backup using backupios command
@@ -176,7 +179,7 @@ else
         print "\nMKSYSB for $(date) COMPLETED SUCCESSFULLY \n" >> ${LOG}
 fi
 # Copy the log file to the share
-cp ${LOG} ${BACKUPDIR}/${LOG}
+cp ${LOG} ${BACKUPDIR}/${LOG##*/}
 #
 # Unmount the NFS share
 #
