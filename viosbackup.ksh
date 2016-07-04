@@ -84,19 +84,18 @@ while [[ $1 = -* ]]; do
 done
 
 # GPR0002
-# If this a NOROOT backup the check there is sufficient space on the local file system for the mksysb file
+# If this a NOROOT backup the check there is sufficient space on the local file system for the mksysb file. Ignore the VMR located in /var/vio/VMLibrary
 # By default this will be saved to /home/padmin/mksysb folder
 if ${NOROOT}
 	then
 	FSSIZE=$(df -tg|grep /home$|awk '{ print $4 }')
-	MKSYSBSIZE=$(df -tk `lsvgfs rootvg` | awk '{total+=$3} END {printf "%.2f \n", total/1024/1024}')
+	MKSYSBSIZE=$(df -tk `lsvgfs rootvg|grep -v VMLibrary` | awk '{total+=$3} END {printf "%.2f \n", total/1024/1024}')
 	if [[ ${MKSYSBSIZE} -ge ${FSSIZE} ]]
 		then
 		print "\nMKSYSB will too large for file system. Terminating backup \n" >> ${LOG}
 		return 1
 	fi
 fi
-
 
 #
 # Check the mount point exists (if run for the first time it may not)
