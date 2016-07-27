@@ -35,7 +35,8 @@
 /wikis/home?lang=en#!/wiki/W76df4d73c7b8_40dc_88f7_e4957b1de7b6/page/VIOS%20backup%20to%20NFS%20share
 #                               AJM0002/AJM0003 removed as these had alrerady been fixed in the April 2016 version
 #                               AJM0001 retained and added in to script
-# 01/07/2016			GPR0002	- Added parameter checking and -noroot processing
+# 01/07/2016					GPR0002	- Added parameter checking and -noroot processing
+# 27/07/2016					GPR0003 - Added file existency check before exiting script
 
 ##############################################################################
 DATE=$(date +%Y'-'%m'-'%d)
@@ -246,6 +247,17 @@ fi
 
 # Copy the log file to the share
 cp ${LOG} ${BACKUPDIR}/${LOG##*/}
+
+# GPR0003
+# If the file exists, then we are good
+
+if [ -f ${FILENAME}} ]; then
+
+                echo "backupios (mksysb) completed at `date`"
+else
+        echo "WARNING: Backup file not found on NFS share."
+fi
+
 #
 # Unmount the NFS share
 #
