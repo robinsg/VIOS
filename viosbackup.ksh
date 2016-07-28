@@ -7,9 +7,9 @@
 # Script to automate vios backup to nfs share
 #
 # Usage:
-# ./viosbackup.ksh
+# ./viosbackup.ksh [-noroot]
 # OR
-# ./viosbackkup.ksh -msksysb
+# ./viosbackkup.ksh -msksysb 
 #
 # Note that the backupios command has two formats:
 #
@@ -31,12 +31,12 @@
 #                               AJM0003 - echo the full date & time when setting the logfile
 #                               AJM0004 - amended the target to 10.137.30.1
 # 17/06/2016    Adam Robinson   AJR0001 - Amended the target to 10.237.50.70
-# 20/06/2016    Glenn Robinson  GPR0001 - Replaced with latest version from https://www.ibm.com/developerworks/community
-/wikis/home?lang=en#!/wiki/W76df4d73c7b8_40dc_88f7_e4957b1de7b6/page/VIOS%20backup%20to%20NFS%20share
+# 20/06/2016    Glenn Robinson  GPR0001 - Replaced with latest version from https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/W76df4d73c7b8_40dc_88f7_e4957b1de7b6/page/VIOS%20backup%20to%20NFS%20share
 #                               AJM0002/AJM0003 removed as these had alrerady been fixed in the April 2016 version
 #                               AJM0001 retained and added in to script
 # 01/07/2016					GPR0002	- Added parameter checking and -noroot processing
-# 27/07/2016					GPR0003 - Added file existency check before exiting script
+# 27/07/2016	Rob Poreba		GPR0003 - Added file existency check before exiting script
+# 28/07/2016	Rob Poreba		GPR0004 - Added logger commands for syslog monitoring
 
 ##############################################################################
 DATE=$(date +%Y'-'%m'-'%d)
@@ -94,6 +94,7 @@ if ${NOROOT}
 	if [[ ${MKSYSBSIZE} -ge ${FSSIZE} ]]
 		then
 		print "\nMKSYSB will too large for file system. Terminating backup \n" >> ${LOG}
+		logger -puser.err -tviosbackup "MKYSYB file will be too large for the file system. See the backup section of server documentation in Confluence and raise a ticket. Exiting."
 		return 1
 	fi
 fi
@@ -124,6 +125,7 @@ RC_NFS=$(echo $?)
 if [[ RC_NFS -ne 0 ]]
 then
         print "\nMounting the NFS share failed. Exiting backup procedure" >> ${LOG}
+		logger -puser.err -tviosbackup "Unable to mount NFS share. See the backup section of server documentation in Confluence and raise a ticket. Exiting."
         exit
 else
         print "\nMount of NFS share successful. Continuing with backup" >> ${LOG}
@@ -192,6 +194,7 @@ RC_VIOSBR=$(echo $?)
 if [[ ${RC_VIOSBR} -ne 0 ]]
 then
         print "\nVIOSBR for $(date) FAILED \n" >> ${LOG}
+		logger -puser.warn -tviosbackup "viosbr backup failed. See the backup section of server documentation in Confluence and raise a ticket. Continuing."
 else
         print "\nVIOSBR for $(date) COMPLETED SUCCESSFULLY \n" >> ${LOG}
 fi
@@ -220,6 +223,7 @@ if ${NOROOT}
 fi
 
 RC_MKSYSB=0
+logger -puser.info -tviosbackup "Starting backup to ${FILENAME}"
 if ${MKSYSB}
 then
 # Run backupios without creating SPOT for NIM or HMC installios
@@ -234,6 +238,7 @@ RC_MKSYSB=$(echo $?)
 if [[ ${RC_MKSYSB} -ne 0 ]]
 then
         print "\nMKSYSB for $(date) FAILED \n" >> ${LOG}
+		logger -puser.err -tviosbackup "backupios backup failed. See the backup section of server documentation in Confluence and raise a ticket. Exiting."
         # rm ${FILENAME}
 else
         print "\nMKSYSB for $(date) COMPLETED SUCCESSFULLY \n" >> ${LOG}
@@ -245,18 +250,28 @@ else
 	fi
 fi
 
-# Copy the log file to the share
-cp ${LOG} ${BACKUPDIR}/${LOG##*/}
-
 # GPR0003
 # If the file exists, then we are good
 
-if [ -f ${FILENAME}} ]; then
+if ${NOROOT}
+	then
+	FILENAME=${BACKUPDIR}/${HOST}_${DATE}.mksysb
+fi
+	
+if [ -e ${FILENAME} ]; then
 
-                echo "backupios (mksysb) completed at `date`"
+        echo "backupios (mksysb) completed at `date`"
+		logger -puser.warn -tviosbackup "Backup to nfs server completed successfully."
 else
         echo "WARNING: Backup file not found on NFS share."
+		logger -puser.err -tviosbackup "Backup to nfs server failed. File not found. See the backup section of server documentation in Confluence and raise a ticket."
+		
 fi
+
+
+# Copy the log file to the share
+cp ${LOG} ${BACKUPDIR}/${LOG##*/}
+
 
 #
 # Unmount the NFS share
