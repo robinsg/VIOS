@@ -37,6 +37,7 @@
 # 01/07/2016					GPR0002	- Added parameter checking and -noroot processing
 # 27/07/2016	Rob Poreba		GPR0003 - Added file existency check before exiting script
 # 28/07/2016	Rob Poreba		GPR0004 - Added logger commands for syslog monitoring
+# 05/09/2017	Glenn Robinson	GPR0005 - Amended file system size check to ensure 2 x mksysb size is available in file system
 
 ##############################################################################
 DATE=$(date +%Y'-'%m'-'%d)
@@ -91,7 +92,11 @@ if ${NOROOT}
 	then
 	FSSIZE=$(df -tg|grep /home$|awk '{ print $4 }')
 	MKSYSBSIZE=$(df -tk `lsvgfs rootvg|grep -v VMLibrary` | awk '{total+=$3} END {printf "%.2f \n", total/1024/1024}')
-	if [[ ${MKSYSBSIZE} -ge ${FSSIZE} ]]
+# GPR0005
+# Make sure that 2 x mksysb file size is free as we'll create a spot and mksysb file
+# This estimate may be a little excessive but should be sufficient for most VIOS environments 
+	MKSYSBSPOTSIZE=$((MKSYSBSIZE*2))
+	if [[ ${MKSYSBSPOTSIZE}} -ge ${FSSIZE} ]]
 		then
 		print "\nMKSYSB will too large for file system. Terminating backup \n" >> ${LOG}
 		logger -puser.err -tviosbackup "MKYSYB file will be too large for the file system. See the backup section of server documentation in Confluence and raise a ticket. Exiting."
