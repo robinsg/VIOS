@@ -34,9 +34,9 @@
 # 20/06/2016    Glenn Robinson  GPR0001 - Replaced with latest version from https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/W76df4d73c7b8_40dc_88f7_e4957b1de7b6/page/VIOS%20backup%20to%20NFS%20share
 #                               AJM0002/AJM0003 removed as these had alrerady been fixed in the April 2016 version
 #                               AJM0001 retained and added in to script
-# 01/07/2016					GPR0002	- Added parameter checking and -noroot processing
-# 27/07/2016	Rob Poreba		GPR0003 - Added file existency check before exiting script
-# 28/07/2016	Rob Poreba		GPR0004 - Added logger commands for syslog monitoring
+# 01/07/2016			GPR0002	- Added parameter checking and -noroot processing
+# 27/07/2016	Rob Poreba	GPR0003 - Added file existency check before exiting script
+# 28/07/2016	Rob Poreba	GPR0004 - Added logger commands for syslog monitoring
 # 05/09/2017	Glenn Robinson	GPR0005 - Amended file system size check to ensure 2 x mksysb size is available in file system
 
 ##############################################################################
