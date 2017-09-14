@@ -96,7 +96,7 @@ if ${NOROOT}
 # Make sure that 2 x mksysb file size is free as we'll create a spot and mksysb file
 # This estimate may be a little excessive but should be sufficient for most VIOS environments 
 	MKSYSBSPOTSIZE=$((MKSYSBSIZE*2))
-	if [[ ${MKSYSBSPOTSIZE}} -ge ${FSSIZE} ]]
+	if [[ ${MKSYSBSPOTSIZE} -ge ${FSSIZE} ]]
 		then
 		print "\nMKSYSB will too large for file system. Terminating backup \n" >> ${LOG}
 		logger -puser.err -tviosbackup "MKYSYB file will be too large for the file system. See the backup section of server documentation in Confluence and raise a ticket. Exiting."
